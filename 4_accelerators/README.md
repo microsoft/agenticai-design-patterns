@@ -8,4 +8,4 @@ This section provides sample implementations of some of the patterns as ready to
 
 - :rocket: [Retrieval Augmented Generation (RAG) Accelerator](01-rag-agent/README.md)
 - :rocket: [Code Generation Agent Accelerator](02-code-generation-agent/README.md)
-- :rocket: [Multi-domain Agent Accelerator](03-multi-domain-agents/automating_analytics/README.md)
+- :rocket: [Multi-domain Agent Accelerator](03-multi-domain-agents//travel_leisure/README.md)
