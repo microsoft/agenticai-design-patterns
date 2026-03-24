@@ -57,7 +57,7 @@ This section provides sample implementations of some of the patterns as ready to
 
 This is a good starting point to understand how to implement the patterns in real world scenarios and test them out with your own data.
 
-Please understand that these accelerators do not necessary cover all aspects under consideration to deliver production ready solutions. Please refer to the [Foundational Design and Implementation Concepts](1_foundational_concepts/README.md) section for a detailed understanding of the concepts at play in a more compregensive fashion.
+Please understand that these accelerators do not necessary cover all aspects under consideration to deliver production ready solutions. Please refer to the [Foundational Design and Implementation Concepts](1_foundational_concepts/README.md) section for a detailed understanding of the concepts at play in a more comprehensive fashion.
 
 ### [5. Auxiliary Design Patterns](5_auxiliary_design_patterns/README.md)
 
