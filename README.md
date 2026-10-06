@@ -1,89 +1,59 @@
-# Generative AI Design Patterns for Agentic AI Systems
+# Agentic AI Design Patterns
 
-## Introduction
+Field-proven design patterns, reference architectures and solution accelerators for building agentic AI systems on Azure and Microsoft Foundry.
 
-This repository contains a set of design patterns illustrating how to effectively build Agentic solutions powered by LLMs (Large Language Models) in Azure.
+Every asset in this repository is reviewed by a curator before it is merged, follows the same folder layout, and carries a machine-readable `manifest.yaml`, so you can browse it here or discover it through search tools.
 
-Agentic AI systems are designed to autonomously pursue complex goals and workflows with limited direct human supervision. These systems act as independent agents, making decisions and performing tasks autonomously.
+## Catalog
 
-The main capabilities of Agentic AI systems are:
-- Autonomy: takes goal-directed actions with minimal human oversight
-- Reasoning: engages in contextual decision-making, makes judgment calls and weighing tradeoffs
-- Adaptable Planning: dynamically adjusts goals and plans based on changing conditions
-- Language Understanding: comprehends and follows natural language instructions
-- Workflow Optimization: fluidly moves between subtasks and applications to complete processes efficiently
+<!-- catalog:start -->
+_No assets have been published yet._
+<!-- catalog:end -->
 
-These capabilities come with great challenges:
-- balancing autonomy with predictability and safety
-- ensuring the system is transparent, explainable, auditable
-- ensuring security and privacy
-- ensuring the system is fair and unbiased
-- human interaction and collaboration
+The catalog above is generated from each asset's `manifest.yaml` by `python tools/assets.py catalog`. Do not edit it by hand.
 
-We intend to provide guidance around the building blocks and approaches to deliver such systems with a clear path to production .
+## Asset kinds
 
-The patterns outlined here are not exhaustive and will evolve over time. We welcome contributions from the community to help us improve the patterns and add new ones.
+| Kind | What it is |
+|------|------------|
+| `design-pattern` | A reusable approach to a recurring agentic design problem, with trade-offs and when (not) to use it. |
+| `reference-architecture` | An end-to-end architecture for a scenario, with components, data flows, identity, security and operations. |
+| `solution-accelerator` | Deployable code and infrastructure that implements a pattern or architecture. |
+| `playbook` | A step-by-step delivery or adoption guide. |
+| `sample` | A small, focused code sample that demonstrates one technique. |
 
-## Table of Content
+## Repository layout
 
-This repository is structured in 4 main sections:
+```
+assets/<asset-id>/        one folder per asset; the folder name is the asset id
+  manifest.yaml           metadata: kind, summary, tags, owners, version, maturity
+  README.md               overview, when to use, architecture, getting started
+  CHANGELOG.md            what changed in each version
+  docs/                   architecture details, decisions (ADRs), diagrams
+  infra/                  infrastructure as code (optional)
+  src/                    source code (optional)
+  samples/  tests/        optional
+templates/asset/          starting point for a new asset
+schema/                   JSON schema for manifest.yaml
+tools/                    validation and catalog generation
+```
 
-### [1. Foundational Design and Implementation Concepts](1_foundational_concepts/README.md)
+Assets live in one flat `assets/` folder; the kind is a manifest field, not a folder. Assets therefore never move and their links stay stable.
 
-This section covers all the core design principles supporting Agentic AI Systems. Beyond the concepts, we also review they key frameworks to consider for the implementation of these concepts.
+## Using an asset
 
-The goal of this section is to help you:
-- identify which design elements are crucial to your solution
-- select the frameworks appropriate to your architecture design
-- understand what you need to deliver to be production ready, including Responsible AI and UX considerations
-
-### [2. Agentic Design Patterns](2_design_patterns/README.md)
-
-This section puts in perspective the foundational elements and provides a set of design patterns that are commonly used in the industry.
-
-Each pattern is designed to address a specific scenario and is backed by a set of best practices and implementation guidelines.
-
-Here you will find the most advanced common scenarios with reference architectures detailing what challenges they address, how to implement them, and the performance and limitations of each pattern.
-
-### [3. Reference Architectures](3_reference_architectures/README.md)
-
-This section provides core details around the architecture considerations at play to deliver these patterns, and includes concrete recommendations on how to implement them in Azure.
-
-These reference architectures support all the patterns outlined in the previous section and provide a clear path to production.
-
-### [4. Agentic Accelerators](4_accelerators/README.md)
-
-This section provides sample implementations of some of the patterns as ready to go solution, with miminum configurations and code changes. 
-
-This is a good starting point to understand how to implement the patterns in real world scenarios and test them out with your own data.
-
-Please understand that these accelerators do not necessary cover all aspects under consideration to deliver production ready solutions. Please refer to the [Foundational Design and Implementation Concepts](1_foundational_concepts/README.md) section for a detailed understanding of the concepts at play in a more compregensive fashion.
-
-### [5. Auxiliary Design Patterns](5_auxiliary_design_patterns/README.md)
-
-You'll find here a few patterns that are not directly related to Agentic AI Systems, but are important to understand in the context of a Agentic AI Systems design as they may support building specific agent skills or data enrichment pipelines.
-
-The list here could be very exhaustive, but we're selecting the few which present some challenges which are worth covering in details.
-
+Start with the asset's `README.md`. Link to a specific version with a tag or commit permalink rather than `main`, because assets evolve.
 
 ## Contributing
 
-This project welcomes contributions and suggestions.  Most contributions require you to agree to a
-Contributor License Agreement (CLA) declaring that you have the right to, and actually do, grant us
-the rights to use your contribution. For details, visit https://cla.opensource.microsoft.com.
+See [CONTRIBUTING.md](CONTRIBUTING.md). In short: copy `templates/asset/`, fill in the manifest and README, run `python tools/assets.py validate`, and open a pull request. A curator reviews every contribution.
 
-When you submit a pull request, a CLA bot will automatically determine whether you need to provide
-a CLA and decorate the PR appropriately (e.g., status check, comment). Simply follow the instructions
-provided by the bot. You will only need to do this once across all repos using our CLA.
+Everything in this repository is public. Do not commit customer names, customer data, internal links, unreleased product information or secrets.
 
-This project has adopted the [Microsoft Open Source Code of Conduct](https://opensource.microsoft.com/codeofconduct/).
-For more information see the [Code of Conduct FAQ](https://opensource.microsoft.com/codeofconduct/faq/) or
-contact [opencode@microsoft.com](mailto:opencode@microsoft.com) with any additional questions or comments.
+## Earlier content
+
+The 2023–2024 content of this repository (foundational concepts, the original design patterns, reference architecture and accelerators) is preserved at commit [`a4c1ee8`](https://github.com/microsoft/agenticai-design-patterns/tree/a4c1ee891c93a2fb2995dbd10f9ced73795d6f64).
 
 ## Trademarks
 
-This project may contain trademarks or logos for projects, products, or services. Authorized use of Microsoft 
-trademarks or logos is subject to and must follow 
-[Microsoft's Trademark & Brand Guidelines](https://www.microsoft.com/en-us/legal/intellectualproperty/trademarks/usage/general).
-Use of Microsoft trademarks or logos in modified versions of this project must not cause confusion or imply Microsoft sponsorship.
-Any use of third-party trademarks or logos are subject to those third-party's policies.
+This project may contain trademarks or logos for projects, products, or services. Authorized use of Microsoft trademarks or logos is subject to and must follow [Microsoft's Trademark & Brand Guidelines](https://www.microsoft.com/en-us/legal/intellectualproperty/trademarks/usage/general). Use of Microsoft trademarks or logos in modified versions of this project must not cause confusion or imply Microsoft sponsorship. Any use of third-party trademarks or logos is subject to those third parties' policies.

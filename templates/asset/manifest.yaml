@@ -1,0 +1,18 @@
+# Copy this folder to assets/<asset-id>/ and replace every value below.
+# Schema: schema/manifest.schema.json
+schema_version: 1
+id: asset-id
+title: Short descriptive title
+summary: >-
+  One or two sentences describing what this asset is and the problem it solves.
+kind: design-pattern # design-pattern | reference-architecture | solution-accelerator | playbook | sample
+maturity: experimental # experimental | preview | stable | deprecated
+version: 0.1.0
+tags:
+  - agentic-ai
+azure_services:
+  - Microsoft Foundry
+owners:
+  - "@your-github-handle"
+last_reviewed: 2026-01-01
+related: []
