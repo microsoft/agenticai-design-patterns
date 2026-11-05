@@ -98,6 +98,79 @@ Every asset is also tagged with the production-readiness pillars it supports, so
 
 The catalog and pillar map above are generated from each asset's `manifest.yaml` by `python scripts/assets.py catalog`. Do not edit them by hand.
 
+## AI Control Plane
+
+When several workloads share one model pool and one budget, the question is not only who may call a model. It is which work keeps moving when capacity or spend runs out. An AI control plane decides that before the request reaches a backend: **identify the workload, apply limits and policies, then route to the right model and capacity**.
+
+The reference implementation is [SimpleL7Proxy](https://github.com/microsoft/SimpleL7Proxy/tree/feature/async) on `feature/async` (pinned at [`3e3da1ab`](https://github.com/microsoft/SimpleL7Proxy/tree/3e3da1ab7a493e6966db14c2a0971f2e8e210256)). It is a self-hosted Layer 7 proxy that sits with Azure API Management in front of Microsoft Foundry and Azure OpenAI endpoints. The [AI Gateway](assets/ai-gateway/README.md) assets in this catalog cover the API Management front door: entitlement, OAuth, identity propagation, and per-team quotas. The control plane is the admission, tokenomics, and priority-routing layer for the shared model pool behind that front door. It is not a generated catalog entry.
+
+### What it decides
+
+1. **Identify the workload.** A user profile, or a request header when profiles are not used, supplies priority, a model override, async permission, and reporting metadata. The proxy resolves the profile before the request enters the queue. Unmatched callers use `DefaultPriority`. Suspicious traffic is classified before it spends capacity reserved for legitimate users.
+2. **Apply limits and budgets.** Daily and monthly token quotas and budgets are evaluated per user and tenant. When a limit is reached, the configured action runs, so one workload cannot consume the pool.
+3. **Route to a model and backend.** Priority sets queue order. Through API Management, it also selects which capacity pools (provisioned throughput or pay-as-you-go) and retry paths are eligible. Critical work can keep a higher-capability model. Less critical work can be delayed, downgraded, or sent to a lower-cost model.
+
+Rule of thumb from the reference implementation: **service** legitimate workloads, **control** cost, **prioritize** the work that matters.
+
+### Illustrative scenario
+
+The [tokenomics scenario](https://github.com/microsoft/SimpleL7Proxy/blob/3e3da1ab7a493e6966db14c2a0971f2e8e210256/docs/concepts/tokenomics_scenario.md) uses a fictional support organization, SupportWorks. Support engineers researching tickets, customers searching for answers, automated agents generating insights, and unknown probes all share the same AI resources. Those workloads do not have the same business value.
+
+| Workload | Allowance | When constrained |
+|---|---|---|
+| Support engineers helping customers | Highest allowance and priority | Bypass the limit so customer-facing work continues |
+| Self-service users | Balanced budget | Stay on an appropriate model, inside budget |
+| Automated insight agents | Smaller allowance, lower priority | Delay, requeue, or move to a lower-cost model |
+| Unknown or abusive traffic | None | Reject before a backend call |
+
+The same shape applies in other domains. A live seller call outranks pipeline scoring. A period-close analyst outranks a batch cost scan. An on-call incident worker outranks a documentation summarizer. The control plane does not change. The profile, limits, and actions do.
+
+![Competing workloads sharing one AI capacity and budget pool](https://github.com/microsoft/SimpleL7Proxy/raw/3e3da1ab7a493e6966db14c2a0971f2e8e210256/docs/concepts/support-problem.png)
+
+![Profiles, limits, budgets, and model routing by workload](https://github.com/microsoft/SimpleL7Proxy/raw/3e3da1ab7a493e6966db14c2a0971f2e8e210256/docs/concepts/support-settings.png)
+
+The goal is not simply lower usage. Critical work keeps moving, cost stays bounded, and remaining capacity goes where it has the most value.
+
+### Policy actions
+
+Tokenomics runs before any backend call and emits one `S7P-Tokenomics` policy-decision event (`RecordKind=PolicyDecision`) per evaluation. A requeued request is evaluated again under the same `MID` and must not be counted as another completed request. `PolicyAction` is configuration. Do not infer the action from `PolicyCondition`.
+
+| Action | Decision | Backend call | Effect |
+|---|---|---|---|
+| `Bypass` | `Allowed` | Yes | Proceed with no model or priority change |
+| `ChangeModel`, `UpgradeModel`, `DowngradeModel` | `AllowedWithChanges` | Yes | Rewrite the model, then proceed |
+| `IncreasePriority`, `DecreasePriority` | `Requeued` | No | Change priority and return to the queue |
+| `Requeue` | `Requeued` | No | Return to the queue |
+| `Delay`, `WaitForReset` | `Delayed` | No | Hold, then evaluate again |
+| `Reject` | `Rejected` | No | Local `429` |
+| `Throttle` | `Throttled` | No | Local throttle |
+
+Conditions the producer can emit include abuse detection, daily and monthly quota or budget exceeded, entitled-tenant budget exceptions, capacity constrained (including critical and high-priority), high queue depth, administrator override, and a default. `None`, `IncreaseLimit`, `DecreaseLimit`, and `Cap` are not assigned a final decision yet. Those events stay `Pending` and must be excluded from allowed, rejected, and completed totals.
+
+### What else the proxy enforces
+
+These data-plane behaviors surround the tokenomics decision:
+
+- **Fair priority queue.** High-priority work is favored, but a flood of high-priority traffic cannot starve lower tiers, and one user cannot monopolize a tier.
+- **Backend selection and failover.** Path filter, then load-balance order, then a per-host circuit breaker. Retries stay inside the request TTL. API Management remains the cross-region load balancer and policy engine. Direct backends are not actively probed, so they use path routing with random or round-robin selection.
+- **Long-running requests.** An opted-in request that passes the async trigger timeout returns `202`. Processing continues in the background, the result is written to Blob Storage, and lifecycle status is published on a per-user Service Bus topic. Async requires the proxy-wide flag, a profile `async-config` (container and topic), and the request header.
+- **Token telemetry.** Prompt and completion counts are parsed from the SSE stream in flight when the backend host uses `processor=OpenAI`, without buffering the body.
+- **Operator-owned runtime.** The proxy runs in the operator's network and authenticates to Azure with managed identity. Warm settings reload from App Configuration without a restart. The priority queue and circuit-breaker state are in-memory and per instance. Requests queued at restart are not recovered.
+
+### Where to read more
+
+| Topic | Document |
+|---|---|
+| Tokenomics scenario | [Limits, budgets, and actions](https://github.com/microsoft/SimpleL7Proxy/blob/3e3da1ab7a493e6966db14c2a0971f2e8e210256/docs/concepts/tokenomics_scenario.md) |
+| Policy-decision event | [Tokenomics event specification](https://github.com/microsoft/SimpleL7Proxy/blob/3e3da1ab7a493e6966db14c2a0971f2e8e210256/docs/reference/Tokenomics-event-spec.md) |
+| Architecture | [SimpleL7Proxy overview](https://github.com/microsoft/SimpleL7Proxy/blob/3e3da1ab7a493e6966db14c2a0971f2e8e210256/docs/concepts/architecture.md) |
+| Request flow | [Understanding the proxy](https://github.com/microsoft/SimpleL7Proxy/blob/3e3da1ab7a493e6966db14c2a0971f2e8e210256/docs/concepts/README.md) |
+| Priority | [Priority levels](https://github.com/microsoft/SimpleL7Proxy/blob/3e3da1ab7a493e6966db14c2a0971f2e8e210256/docs/faq/priority-levels.md) |
+| Profiles | [User profiles](https://github.com/microsoft/SimpleL7Proxy/blob/3e3da1ab7a493e6966db14c2a0971f2e8e210256/docs/faq/user-profiles.md) |
+| Async | [Async operation](https://github.com/microsoft/SimpleL7Proxy/blob/3e3da1ab7a493e6966db14c2a0971f2e8e210256/docs/faq/async-operation.md) |
+
+Related catalog assets: [Multi-Team Model Gateway with Per-Team Token Quotas](assets/ai-gateway/multi-team-model-gateway/README.md) for gateway-enforced team budgets, and [Bounded Autonomy](assets/orchestration-and-workflows/bounded-autonomy/README.md) for server-side budgets on agent actions.
+
 ## How this repository is used
 
 This repository is a public technical reference. Architects and engineers use it directly, and teams and partners running path-to-production programs for agentic workloads use it as their technical reference. Program process such as intake, engagement and scheduling lives outside this repository; the assets here stay focused on reusable architecture, code and evidence.
